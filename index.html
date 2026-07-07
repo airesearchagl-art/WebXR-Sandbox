@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebXR Sandbox</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+        height: 100%;
+      }
+      #info {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        color: #0f0;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 1;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info">WebXR Sandbox - STEP1/STEP2 (red cube + debug panel)</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
