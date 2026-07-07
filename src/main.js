@@ -222,7 +222,35 @@ function safeGetInputSources(session) {
   }
 }
 
-function describeInputSource(source, index) {
+// --- Controller button/axes diagnostics -----------------------------------
+// Tracks the most recently *pressed* (rising-edge) button across all
+// controllers, keyed by handedness+index so left/right and different
+// buttons don't clobber each other's "was it already pressed" state.
+let lastButtonHandedness = 'none';
+let lastButtonIndex = -1;
+let lastButtonValue = 0;
+const previousButtonPressed = new Map();
+
+function updateControllerButtonTracking(inputSources) {
+  inputSources.forEach((source) => {
+    const gamepad = source.gamepad;
+    if (!gamepad || !gamepad.buttons) return;
+    const handedness = source.handedness || 'unknown';
+
+    gamepad.buttons.forEach((button, buttonIndex) => {
+      const key = `${handedness}:${buttonIndex}`;
+      const wasPressed = previousButtonPressed.get(key) || false;
+      if (button.pressed && !wasPressed) {
+        lastButtonHandedness = handedness;
+        lastButtonIndex = buttonIndex;
+        lastButtonValue = button.value;
+      }
+      previousButtonPressed.set(key, button.pressed);
+    });
+  });
+}
+
+function describeControllerDetail(source, index) {
   const handedness = source.handedness || 'unknown';
   const profiles =
     Array.isArray(source.profiles) && source.profiles.length > 0
@@ -230,12 +258,25 @@ function describeInputSource(source, index) {
       : 'none';
   const targetRayMode = source.targetRayMode || 'unknown';
   const gamepad = source.gamepad || null;
-  const buttonCount = gamepad && gamepad.buttons ? gamepad.buttons.length : 0;
-  const axesCount = gamepad && gamepad.axes ? gamepad.axes.length : 0;
+  const buttons = gamepad && gamepad.buttons ? gamepad.buttons : [];
+  const axes = gamepad && gamepad.axes ? gamepad.axes : [];
+
+  const pressedIdx = [];
+  const touchedIdx = [];
+  const activeVals = [];
+  buttons.forEach((button, buttonIndex) => {
+    if (button.pressed) pressedIdx.push(buttonIndex);
+    if (button.touched) touchedIdx.push(buttonIndex);
+    if (button.value > 0.05) activeVals.push(`${buttonIndex}:${button.value.toFixed(2)}`);
+  });
+  const axesStr = axes.map((value, axisIndex) => `${axisIndex}:${value.toFixed(2)}`).join(' ');
 
   return [
-    `#${index} ${handedness} | ray:${targetRayMode} | gp:${gamepad ? 'yes' : 'no'} btn:${buttonCount} axes:${axesCount}`,
+    `#${index} ${handedness} | ray:${targetRayMode} | gp:${gamepad ? 'yes' : 'no'}`,
     `    profiles: ${profiles}`,
+    `    btn:${buttons.length} axes:${axes.length} pressed:[${pressedIdx.join(',')}] touched:[${touchedIdx.join(',')}]`,
+    `    active(>0.05): [${activeVals.join(' ')}]`,
+    `    axes: [${axesStr}]`,
   ];
 }
 
@@ -256,6 +297,7 @@ function render() {
 
     const session = safeGetSession();
     const inputSources = safeGetInputSources(session);
+    updateControllerButtonTracking(inputSources);
 
     camera.getWorldPosition(cameraWorldPosition);
     camera.getWorldQuaternion(cameraWorldQuaternion);
@@ -276,6 +318,7 @@ function render() {
       `inputsourceschange count: ${inputSourcesChangeCount}`,
       `last event: ${lastEventName}`,
       `last error: ${lastErrorMessage}`,
+      `last button: ${lastButtonHandedness} #${lastButtonIndex} value:${lastButtonValue.toFixed(2)}`,
       '',
       `cam pos: ${shortVector3(cameraWorldPosition)}`,
       `cam quat: ${shortQuaternion(cameraWorldQuaternion)}`,
@@ -283,7 +326,7 @@ function render() {
     ];
 
     inputSources.forEach((source, index) => {
-      lines.push(...describeInputSource(source, index));
+      lines.push(...describeControllerDetail(source, index));
     });
 
     updateDebugPanel(debugPanel, lines);

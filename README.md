@@ -36,6 +36,7 @@ npm run build
 - `npm run dev -- --host 0.0.0.0` でLAN内公開はできますが、その場合も `http://` 経由でのWebXR起動は多くの環境でブロックされるため、HTTPS化の検証が別途必要です。
 - Quest Browser は Console が確認しづらいため、重要な状態（`xr.isPresenting` や `inputSources` など）は本 Sandbox のように **画面内 Debug Panel** に表示する方針を取っています。
 - Debug Panel には `sessionstart`/`sessionend`/`inputsourceschange` の発生回数、直近のイベント名、直近のエラーメッセージ、現在のHUD parent、カメラのワールド座標・クォータニオンの短縮表示も含まれます。実機検証時はこれらの値も `docs/findings.md` に記録してください。
+- Debug Panel には左右Controllerごとの `pressed`/`touched`/`value > 0.05` のbutton index一覧、axesの主要値、直近に押されたbutton（handedness/index/value）も表示されます。Quest Touch Plus Controllerのbutton/axes mapping実測に使用してください。
 - Vercelでホスティングしている場合、Deployment Protection / Vercel Authentication が有効なURLはQuest Browserからログインなしでアクセスできないことがあります。実機検証では、それらが **OFF のURL、または Production URL** を使用してください。
 
 ## HUD 表示方式
@@ -43,11 +44,11 @@ npm run build
 `src/main.js` の `HUD_MODES` に定義された4方式を切り替えられます（URL の `?hud=` パラメータ、または開発中はキーボードの `H` キーでも切り替え可能）。
 
 - `world-fixed`: シーン内の固定座標に配置（カメラに追従しない）
-- `camera-forward`: カメラの子要素として、常に正面に固定表示（初期値候補）
+- `camera-forward`: **【推奨】** カメラの子要素として、常に正面に固定表示。Quest Browser実機検証でHUD parentが`camera(main)`として意図通りに追従することを確認済み
 - `camera-add`: カメラの子要素として、コーナー寄せのHUD風に配置
-- `xr-camera-add`: （実験的）`renderer.xr.getCamera()` が返す XR 用サブカメラに直接アタッチする方式。ブラウザ・three.jsバージョン依存の可能性があり要検証
+- `xr-camera-add`: （実験的・非推奨）`renderer.xr.getCamera()` が返す XR 用サブカメラに直接アタッチしようとする方式。実機検証では表示自体は成功するが `HUD parent` が `camera(main)` のままとなり、意図したXRサブカメラへのattachができていないことを確認済み。詳細は `docs/findings.md` 参照
 
-初期値は `camera-forward` です（Quest Browser で見えやすいことを優先）。
+初期値は `camera-forward` です（Quest Browser で見えやすいことを優先、かつ実機で追従が確認できている推奨方式のため）。
 
 ## 検証ロードマップ（STEP1〜STEP7・予定）
 
