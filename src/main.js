@@ -111,6 +111,71 @@ function attachPanel(mode) {
 
 attachPanel(hudMode);
 
+// --- Diagnostics: session lifecycle / error tracking ---------------------
+// Quest Browser's console is hard to reach, so these counters and the last
+// event/error are surfaced on the in-VR Debug Panel instead.
+let sessionStartCount = 0;
+let sessionEndCount = 0;
+let inputSourcesChangeCount = 0;
+let lastEventName = 'none';
+let lastErrorMessage = 'none';
+let activeSession = null;
+
+function recordEvent(name) {
+  lastEventName = name;
+}
+
+function recordError(context, error) {
+  const message = error && error.message ? error.message : String(error);
+  lastErrorMessage = `${context}: ${message}`;
+}
+
+function onInputSourcesChange() {
+  inputSourcesChangeCount += 1;
+  recordEvent('inputsourceschange');
+}
+
+renderer.xr.addEventListener('sessionstart', () => {
+  sessionStartCount += 1;
+  recordEvent('sessionstart');
+  try {
+    activeSession = renderer.xr.getSession();
+    if (activeSession) {
+      activeSession.addEventListener('inputsourceschange', onInputSourcesChange);
+    }
+  } catch (error) {
+    recordError('sessionstart', error);
+  }
+});
+
+renderer.xr.addEventListener('sessionend', () => {
+  sessionEndCount += 1;
+  recordEvent('sessionend');
+  if (activeSession) {
+    try {
+      activeSession.removeEventListener('inputsourceschange', onInputSourcesChange);
+    } catch (error) {
+      recordError('sessionend', error);
+    }
+  }
+  activeSession = null;
+});
+
+function describeHudParent(parent) {
+  if (parent === scene) return 'scene';
+  if (parent === camera) return 'camera(main)';
+  if (parent && parent.isCamera) return 'camera(xr-sub)';
+  return parent && parent.type ? parent.type : 'unknown';
+}
+
+function shortVector3(v) {
+  return `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`;
+}
+
+function shortQuaternion(q) {
+  return `${q.x.toFixed(2)}, ${q.y.toFixed(2)}, ${q.z.toFixed(2)}, ${q.w.toFixed(2)}`;
+}
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -167,34 +232,53 @@ function shortUserAgent(ua) {
 }
 
 let frameCount = 0;
+const cameraWorldPosition = new THREE.Vector3();
+const cameraWorldQuaternion = new THREE.Quaternion();
 
 function render() {
-  frameCount += 1;
-  cube.rotation.y += 0.01;
-  cube.rotation.x += 0.005;
+  try {
+    frameCount += 1;
+    cube.rotation.y += 0.01;
+    cube.rotation.x += 0.005;
 
-  const session = safeGetSession();
-  const inputSources = safeGetInputSources(session);
+    const session = safeGetSession();
+    const inputSources = safeGetInputSources(session);
 
-  const lines = [
-    'WebXR Sandbox Debug Panel',
-    `frame: ${frameCount}`,
-    `xr.isPresenting: ${renderer.xr.isPresenting}`,
-    `navigator.xr: ${typeof navigator !== 'undefined' && !!navigator.xr}`,
-    `XRSession: ${!!session}`,
-    `inputSources: ${inputSources.length}`,
-    `HUD mode: ${hudMode}`,
-    `UA: ${shortUserAgent(navigator.userAgent)}`,
-    '',
-  ];
+    camera.getWorldPosition(cameraWorldPosition);
+    camera.getWorldQuaternion(cameraWorldQuaternion);
 
-  inputSources.forEach((source, index) => {
-    lines.push(...describeInputSource(source, index));
-  });
+    const lines = [
+      'WebXR Sandbox Debug Panel',
+      `frame: ${frameCount}`,
+      `xr.isPresenting: ${renderer.xr.isPresenting}`,
+      `navigator.xr: ${typeof navigator !== 'undefined' && !!navigator.xr}`,
+      `XRSession: ${!!session}`,
+      `inputSources: ${inputSources.length}`,
+      `HUD mode: ${hudMode}`,
+      `HUD parent: ${describeHudParent(panelParent)}`,
+      `UA: ${shortUserAgent(navigator.userAgent)}`,
+      '',
+      `sessionstart count: ${sessionStartCount}`,
+      `sessionend count: ${sessionEndCount}`,
+      `inputsourceschange count: ${inputSourcesChangeCount}`,
+      `last event: ${lastEventName}`,
+      `last error: ${lastErrorMessage}`,
+      '',
+      `cam pos: ${shortVector3(cameraWorldPosition)}`,
+      `cam quat: ${shortQuaternion(cameraWorldQuaternion)}`,
+      '',
+    ];
 
-  updateDebugPanel(debugPanel, lines);
+    inputSources.forEach((source, index) => {
+      lines.push(...describeInputSource(source, index));
+    });
 
-  renderer.render(scene, camera);
+    updateDebugPanel(debugPanel, lines);
+
+    renderer.render(scene, camera);
+  } catch (error) {
+    recordError('render', error);
+  }
 }
 
 renderer.setAnimationLoop(render);
