@@ -53,7 +53,7 @@ npm run build
 
 ## Controller操作表
 
-Quest Touch Plus Controllerで実機実測したbutton mappingに基づき、以下の操作を割り当てています（`pressed`の立ち上がりエッジで発火。押しっぽなしで連続実行はされません）。**以下の操作はいずれもQuest実機で動作成功を確認済みです**（`docs/findings.md` 参照）。
+Quest Touch Plus Controllerで実機実測したbutton mappingに基づき、以下の操作を割り当てています（`pressed`の立ち上がりエッジで発火。押しっぱなしで連続実行はされません）。**以下の操作はいずれもQuest実機で動作成功を確認済みです**（`docs/findings.md` 参照）。
 
 | 操作 | Controller | button index | 実測ボタン名 | 実機確認 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ Quest Touch Plus Controllerで実機実測したbutton mappingに基づき、以
 
 - Trigger（`#0`）・Grip（`#1`）は現時点では未割り当てで、将来の拡張用に予約しています。
 - Left Menu（`#12`）はDebug Panelの取得ログ（pressed/touched一覧）には表示されますが、**主要操作としては採用していません**。
-- ダミーシーンは3種類（Scene 1: 赤Cube / Scene 2: 青Cube / Scene 3: 緑Cube＋背景色変更）で、別々のTHREE.Sceneを持つのではなく、単一シーン内でCubeの色と背景色を切り替える方式です。Cube色が赤→青→緑と切り替わること、押しっぽなしで連続切替されないこと、実機で確認済みです。
+- ダミーシーンは3種類（Scene 1: 赤Cube / Scene 2: 青Cube / Scene 3: 緑Cube＋背景色変更）で、別々のTHREE.Sceneを持つのではなく、単一シーン内でCubeの色と背景色を切り替える方式です。Cube色が赤→青→緑と切り替わること、押しっぱなしで連続切替されないこと、実機で確認済みです。
 
 ## 推奨Controller入力方式（ArchView360へ戻す実装方針）
 
@@ -72,7 +72,7 @@ Quest Touch Plus Controllerで実機実測したbutton mappingに基づき、以
 
 - `session.inputSources` のポーリング（毎フレーム走査）で接続中のControllerを検出する
 - 各`XRInputSource.gamepad.buttons`を参照し、`pressed`の**立ち上がりエッジ検知**（前フレームの状態をhandedness+button indexをキーに保持し、falseからtrueへの変化を検出）でアクションを発火する
-- こうすることで、押しっぽなし状態でアクションが連続実行されることを防げる（本Sandboxで実機確認済み）
+- こうすることで、押しっぱなし状態でアクションが連続実行されることを防げる（本Sandboxで実機確認済み）
 
 ## 検証ロードマップ（STEP1〜STEP7・予定）
 

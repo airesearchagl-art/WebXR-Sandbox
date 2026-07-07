@@ -178,13 +178,13 @@
 - Deployment Protection: 不明
 
 ### 対象STEP: STEP7相当（Controller操作によるダミーシーン切替・HUD/Debug表示切替の実機動作確認）
-- 期待結果: 前回PR（`feat: add controller scene switching test`）で実装したController操作マッピング（Right A → nextScene / Left X → prevScene / Right B → toggleHud / Left Y → toggleDebugDetail）が、Quest実機上で意図通りに動作し、押しっぽなしで連続実行されないこと
+- 期待結果: 前回PR（`feat: add controller scene switching test`）で実装したController操作マッピング（Right A → nextScene / Left X → prevScene / Right B → toggleHud / Left Y → toggleDebugDetail）が、Quest実機上で意図通りに動作し、押しっぱなしで連続実行されないこと
 - 実際の結果（実機確認済み・ユーザー報告）:
   - Right A `#4`: 次シーンへ進む。**成功**
   - Left X `#4`: 前シーンへ戻る。**成功**
   - Right B `#5`: HUD ON/OFF。**成功**
   - Left Y `#5`: Debug Panel詳細/簡易切替。**成功**
-  - 押しっぽなしで連続切替されないこと（エッジ検知が意図通り機能）。**成功**
+  - 押しっぱなしで連続切替されないこと（エッジ検知が意図通り機能）。**成功**
   - Cube色が赤→青→緑の順で切り替わること。**成功**
   - Debug Panel上の `last action` / 表示更新が想定通りであること。**成功**
 
@@ -199,7 +199,7 @@
 - Right A `#4` / Left X `#4` / Right B `#5` / Left Y `#5` の4ボタンについて、実機での意図通りの動作（エッジ検知による単発発火含む）を確認。Trigger `#0` / Grip `#1` は今回も未使用のまま。Left Menu `#12` は主要操作として採用していない（今回も同様）。
 
 ### 採用判断: 
-- Controller操作によるダミーシーン切替・HUD/Debug表示切替えの実装方式を採用とする。
+- Controller操作によるダミーシーン切替・HUD/Debug表示切替の実装方式を採用とする。
   - 推奨HUD方式: `camera-forward`
   - 推奨Controller入力方式: `session.inputSources` ポーリング + `gamepad.buttons` 参照 + pressed立ち上がりエッジ検知（handedness+button indexをキーとした前フレーム状態保持）
   - `xr-camera-add` および Left Menu `#12` は主要操作・採用候補として不採用のまま維持する。
