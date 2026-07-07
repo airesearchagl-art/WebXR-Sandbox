@@ -149,7 +149,7 @@
 - 前回記録から変更なし（`inputSources: 2`、`profiles: meta-quest-touch-plus`）。
 
 ### buttons / axes結果: 
-- 上記の実測 button mapping参照。axesの実測値（スティック傾き等の具体的な数値）は今回の報告に含まれず、別途実機確認が必備。
+- 上記の実測 button mapping参照。axesの実測値（スティック傾き等の具体的な数値）は今回の報告に含まれず、別途実機確認が必要。
 
 ### 採用判断: 
 - 実測結果に基づき、以下のController操作を採用する（本PR `feat: add controller scene switching test` で実装）。
@@ -164,3 +164,47 @@
 ### ArchView360へ戻すかどうか: 
 - Quest Touch Plus のbutton mapping（Trigger#0, Grip#1, Stick click#3, X/A#4, Y/B#5, Menu#12）はArchView360側のController実装の参考情報として持ち帰り候補とする。
 - ダミーシーン切り替えロジック自体の採用可否は、実機での動作確認後に判断する。
+
+---
+
+### 検証日: 2026-07-07（人間によるQuest実機検証・Controllerシーン切替動作確認）
+- Quest機種: 未記録（今回の報告にQuest機種の記載なし。推測で埋めない）
+- Meta OS version: 未記録（今回の報告に記載なし）
+- Quest Browser version: 未記録（今回の報告に記載なし）
+- Three.js version: `three@0.169.0`（コード変更なし）
+- 配信URL / HTTPS有無: 未記録（今回の報告にURL/HTTPS有無の詳細記載なし）
+- Vercel URL: 未記録
+- Production / Preview: 未記録
+- Deployment Protection: 不明
+
+### 対象STEP: STEP7相当（Controller操作によるダミーシーン切替・HUD/Debug表示切替の実機動作確認）
+- 期待結果: 前回PR（`feat: add controller scene switching test`）で実装したController操作マッピング（Right A → nextScene / Left X → prevScene / Right B → toggleHud / Left Y → toggleDebugDetail）が、Quest実機上で意図通りに動作し、押しっぱなしで連続実行されないこと
+- 実際の結果（実機確認済み・ユーザー報告）:
+  - Right A `#4`: 次シーンへ進む。**成功**
+  - Left X `#4`: 前シーンへ戻る。**成功**
+  - Right B `#5`: HUD ON/OFF。**成功**
+  - Left Y `#5`: Debug Panel詳細/簡易切替。**成功**
+  - 押しっぱなしで連続切替されないこと（エッジ検知が意図通り機能）。**成功**
+  - Cube色が赤→青→緑の順で切り替わること。**成功**
+  - Debug Panel上の `last action` / 表示更新が想定通りであること。**成功**
+
+### HUD表示方式: world-fixed / camera-forward / camera-add / xr-camera-add
+- 本検証では変更なし。`camera-forward` を、実機での追従確認・HUD ON/OFF動作確認が取れたことから、**ArchView360へ戻す推奨HUD方式として確定する**。
+- `xr-camera-add` は引き続き非推奨・実験扱いのまま。主要操作としては不採用。
+
+### inputSources結果: 
+- 前回記録から変更なし。今回の検証は`session.inputSources`ポーリング + `gamepad.buttons`参照 + pressed立ち上がりエッジ検知による操作が実機で正しく機能することを確認したものであり、この方式をController入力の推奨実装方式として確定する。
+
+### buttons / axes結果: 
+- Right A `#4` / Left X `#4` / Right B `#5` / Left Y `#5` の4ボタンについて、実機での意図通りの動作（エッジ検知による単発発火含む）を確認。Trigger `#0` / Grip `#1` は今回も未使用のまま。Left Menu `#12` は主要操作として採用していない（今回も同様）。
+
+### 採用判断: 
+- Controller操作によるダミーシーン切替・HUD/Debug表示切替の実装方式を採用とする。
+  - 推奨HUD方式: `camera-forward`
+  - 推奨Controller入力方式: `session.inputSources` ポーリング + `gamepad.buttons` 参照 + pressed立ち上がりエッジ検知（handedness+button indexをキーとした前フレーム状態保持）
+  - `xr-camera-add` および Left Menu `#12` は主要操作・採用候補として不採用のまま維持する。
+
+### ArchView360へ戻すかどうか: 
+- **STEP7相当のController操作によるダミーシーン切替は実機確認済みのため、ArchView360へ戻す候補として確定する。**
+- 持ち帰る実装方針: `camera-forward` によるHUD追従、`session.inputSources` + `gamepad.buttons` + pressed立ち上がりエッジ検知によるController操作。
+- 未確認事項: axesの具体的な実測値、`camera-add`モードのHUD parent再確認は引き続き次回以降の課題。
