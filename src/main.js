@@ -146,6 +146,19 @@ renderer.xr.addEventListener('sessionstart', () => {
   } catch (error) {
     recordError('sessionstart', error);
   }
+
+  // xr-camera-add targets the XR sub-camera returned by
+  // renderer.xr.getCamera(), which only exists once presenting has
+  // actually started. The initial attachPanel() call at page load runs
+  // before any session exists, so it falls back to the main camera;
+  // re-run it now that a session is active.
+  if (hudMode === 'xr-camera-add') {
+    try {
+      attachPanel(hudMode);
+    } catch (error) {
+      recordError('sessionstart attachPanel', error);
+    }
+  }
 });
 
 renderer.xr.addEventListener('sessionend', () => {

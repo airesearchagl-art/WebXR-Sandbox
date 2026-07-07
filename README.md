@@ -36,6 +36,7 @@ npm run build
 - `npm run dev -- --host 0.0.0.0` でLAN内公開はできますが、その場合も `http://` 経由でのWebXR起動は多くの環境でブロックされるため、HTTPS化の検証が別途必要です。
 - Quest Browser は Console が確認しづらいため、重要な状態（`xr.isPresenting` や `inputSources` など）は本 Sandbox のように **画面内 Debug Panel** に表示する方針を取っています。
 - Debug Panel には `sessionstart`/`sessionend`/`inputsourceschange` の発生回数、直近のイベント名、直近のエラーメッセージ、現在のHUD parent、カメラのワールド座標・クォータニオンの短縮表示も含まれます。実機検証時はこれらの値も `docs/findings.md` に記録してください。
+- Vercelでホスティングしている場合、Deployment Protection / Vercel Authentication が有効なURLはQuest Browserからログインなしでアクセスできないことがあります。実機検証では、それらが **OFF のURL、または Production URL** を使用してください。
 
 ## HUD 表示方式
 

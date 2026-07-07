@@ -12,6 +12,9 @@
 - Quest Browser version: 
 - Three.js version: 
 - 配信URL / HTTPS有無: 
+- Vercel URL: 
+- Production / Preview: 
+- Deployment Protection: なし / あり / 不明
 
 ### 対象STEP: 
 - 期待結果: 
@@ -19,6 +22,7 @@
 
 ### HUD表示方式: 
 - world-fixed / camera-forward / camera-add / xr-camera-add のいずれか
+- HUD parent 表示値: 
 
 ### inputSources結果: 
 - 
