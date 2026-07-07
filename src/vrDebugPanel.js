@@ -4,14 +4,17 @@ import * as THREE from 'three';
  * Creates a CanvasTexture + PlaneGeometry debug panel that can be attached
  * to the scene or the camera to act as an in-VR HUD.
  */
-export function createDebugPanel(width = 512, height = 512) {
+export function createDebugPanel(width = 512, height = 768) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d');
 
   const texture = new THREE.CanvasTexture(canvas);
-  const geometry = new THREE.PlaneGeometry(0.6, 0.6);
+  // Panel geometry keeps the same aspect ratio as the canvas so the extra
+  // diagnostic lines (session/error/HUD-parent/camera transform) fit
+  // without stretching the text.
+  const geometry = new THREE.PlaneGeometry(0.6, 0.6 * (height / width));
   const material = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
