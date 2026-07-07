@@ -43,13 +43,63 @@ scene.add(dirLight);
 const grid = new THREE.GridHelper(10, 20, 0x00ff88, 0x224422);
 scene.add(grid);
 
-// STEP1: red cube
+// STEP1: cube (color/background swapped per dummy scene, see SCENES below)
 const cube = new THREE.Mesh(
   new THREE.BoxGeometry(0.3, 0.3, 0.3),
   new THREE.MeshStandardMaterial({ color: 0xff0000 })
 );
 cube.position.set(0, 1.2, -1);
 scene.add(cube);
+
+// --- Dummy scenes for Controller-driven scene switching --------------------
+// These are not separate THREE.Scene graphs; switching just swaps the cube
+// color and background of the single scene. That's enough to visually
+// confirm scene-switching input works without the extra complexity of
+// managing multiple scene graphs (camera/lights/grid/HUD would all need to
+// be re-attached per scene otherwise).
+const SCENES = [
+  { label: 'Scene 1: Red Cube', cubeColor: 0xff0000, background: 0x101018 },
+  { label: 'Scene 2: Blue Cube', cubeColor: 0x0000ff, background: 0x101018 },
+  { label: 'Scene 3: Green Cube', cubeColor: 0x00ff00, background: 0x102010 },
+];
+
+let sceneIndex = 0;
+let lastAction = 'none';
+
+function applyScene(index) {
+  const definition = SCENES[index];
+  cube.material.color.setHex(definition.cubeColor);
+  scene.background = new THREE.Color(definition.background);
+}
+
+function nextScene() {
+  sceneIndex = (sceneIndex + 1) % SCENES.length;
+  applyScene(sceneIndex);
+  lastAction = 'nextScene';
+}
+
+function prevScene() {
+  sceneIndex = (sceneIndex - 1 + SCENES.length) % SCENES.length;
+  applyScene(sceneIndex);
+  lastAction = 'prevScene';
+}
+
+applyScene(sceneIndex);
+
+// --- HUD / debug detail visibility toggles ---------------------------------
+let hudVisible = true;
+let debugDetailVisible = true;
+
+function toggleHud() {
+  hudVisible = !hudVisible;
+  debugPanel.mesh.visible = hudVisible;
+  lastAction = 'toggleHud';
+}
+
+function toggleDebugDetail() {
+  debugDetailVisible = !debugDetailVisible;
+  lastAction = 'toggleDebugDetail';
+}
 
 // STEP2: debug / HUD panel
 const debugPanel = createDebugPanel();
@@ -231,6 +281,18 @@ let lastButtonIndex = -1;
 let lastButtonValue = 0;
 const previousButtonPressed = new Map();
 
+// Quest Touch Plus button mapping, measured on real hardware (see
+// docs/findings.md). Trigger (#0) and Grip (#1) are intentionally not
+// mapped here — reserved for future interactions. Left Menu (#12) is
+// logged via describeControllerDetail() but deliberately excluded from
+// primary actions.
+const CONTROLLER_ACTIONS = [
+  { handedness: 'right', index: 4, action: () => nextScene() }, // Right A
+  { handedness: 'left', index: 4, action: () => prevScene() }, // Left X
+  { handedness: 'right', index: 5, action: () => toggleHud() }, // Right B
+  { handedness: 'left', index: 5, action: () => toggleDebugDetail() }, // Left Y
+];
+
 function updateControllerButtonTracking(inputSources) {
   inputSources.forEach((source) => {
     const gamepad = source.gamepad;
@@ -244,6 +306,17 @@ function updateControllerButtonTracking(inputSources) {
         lastButtonHandedness = handedness;
         lastButtonIndex = buttonIndex;
         lastButtonValue = button.value;
+
+        const mapped = CONTROLLER_ACTIONS.find(
+          (entry) => entry.handedness === handedness && entry.index === buttonIndex
+        );
+        if (mapped) {
+          try {
+            mapped.action();
+          } catch (error) {
+            recordError(`controller action ${handedness}#${buttonIndex}`, error);
+          }
+        }
       }
       previousButtonPressed.set(key, button.pressed);
     });
@@ -302,32 +375,55 @@ function render() {
     camera.getWorldPosition(cameraWorldPosition);
     camera.getWorldQuaternion(cameraWorldQuaternion);
 
-    const lines = [
-      'WebXR Sandbox Debug Panel',
-      `frame: ${frameCount}`,
-      `xr.isPresenting: ${renderer.xr.isPresenting}`,
-      `navigator.xr: ${typeof navigator !== 'undefined' && !!navigator.xr}`,
-      `XRSession: ${!!session}`,
-      `inputSources: ${inputSources.length}`,
-      `HUD mode: ${hudMode}`,
-      `HUD parent: ${describeHudParent(panelParent)}`,
-      `UA: ${shortUserAgent(navigator.userAgent)}`,
-      '',
-      `sessionstart count: ${sessionStartCount}`,
-      `sessionend count: ${sessionEndCount}`,
-      `inputsourceschange count: ${inputSourcesChangeCount}`,
-      `last event: ${lastEventName}`,
-      `last error: ${lastErrorMessage}`,
-      `last button: ${lastButtonHandedness} #${lastButtonIndex} value:${lastButtonValue.toFixed(2)}`,
-      '',
-      `cam pos: ${shortVector3(cameraWorldPosition)}`,
-      `cam quat: ${shortQuaternion(cameraWorldQuaternion)}`,
-      '',
+    const sceneLines = [
+      `scene: ${sceneIndex} - ${SCENES[sceneIndex].label}`,
+      `last action: ${lastAction}`,
+      `HUD visible: ${hudVisible}`,
+      `debug detail: ${debugDetailVisible}`,
     ];
 
-    inputSources.forEach((source, index) => {
-      lines.push(...describeControllerDetail(source, index));
-    });
+    let lines;
+    if (debugDetailVisible) {
+      lines = [
+        'WebXR Sandbox Debug Panel',
+        `frame: ${frameCount}`,
+        `xr.isPresenting: ${renderer.xr.isPresenting}`,
+        `navigator.xr: ${typeof navigator !== 'undefined' && !!navigator.xr}`,
+        `XRSession: ${!!session}`,
+        `inputSources: ${inputSources.length}`,
+        `HUD mode: ${hudMode}`,
+        `HUD parent: ${describeHudParent(panelParent)}`,
+        `UA: ${shortUserAgent(navigator.userAgent)}`,
+        '',
+        ...sceneLines,
+        '',
+        `sessionstart count: ${sessionStartCount}`,
+        `sessionend count: ${sessionEndCount}`,
+        `inputsourceschange count: ${inputSourcesChangeCount}`,
+        `last event: ${lastEventName}`,
+        `last error: ${lastErrorMessage}`,
+        `last button: ${lastButtonHandedness} #${lastButtonIndex} value:${lastButtonValue.toFixed(2)}`,
+        '',
+        `cam pos: ${shortVector3(cameraWorldPosition)}`,
+        `cam quat: ${shortQuaternion(cameraWorldQuaternion)}`,
+        '',
+      ];
+
+      inputSources.forEach((source, index) => {
+        lines.push(...describeControllerDetail(source, index));
+      });
+    } else {
+      // Compact mode (Left Y / toggleDebugDetail): keep only the essentials
+      // so the panel stays readable at a glance.
+      lines = [
+        'WebXR Sandbox Debug Panel (compact)',
+        `frame: ${frameCount}`,
+        `xr.isPresenting: ${renderer.xr.isPresenting}`,
+        `inputSources: ${inputSources.length}`,
+        '',
+        ...sceneLines,
+      ];
+    }
 
     updateDebugPanel(debugPanel, lines);
 

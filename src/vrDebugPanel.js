@@ -4,7 +4,7 @@ import * as THREE from 'three';
  * Creates a CanvasTexture + PlaneGeometry debug panel that can be attached
  * to the scene or the camera to act as an in-VR HUD.
  */
-export function createDebugPanel(width = 512, height = 896) {
+export function createDebugPanel(width = 512, height = 1024) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;

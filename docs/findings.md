@@ -114,3 +114,53 @@
 ### ArchView360へ戻すかどうか: 
 - STEP1/STEP2（赤Cube表示・Debug Panel表示、`camera-forward`によるHUD追従）は実機確認済みのため、ArchView360へ持ち帰る候補とする。
 - Controller button/axes の具体的なmapping値は次回実機検証で実測後に判断する。
+
+---
+
+### 検証日: 2026-07-07（人間によるQuest実機検証・Touch Plus button mapping実測）
+- Quest機種: 未記録（今回の報告にQuest機種の記載なし。推測で埋めない）
+- Meta OS version: 未記録（今回の報告に記載なし）
+- Quest Browser version: 未記録（今回の報告に記載なし）
+- Three.js version: `three@0.169.0`（コード変更なし）
+- 配信URL / HTTPS有無: 未記録（今回の報告にURL/HTTPS有無の詳細記載なし）
+- Vercel URL: 未記録
+- Production / Preview: 未記録
+- Deployment Protection: 不明
+
+### 対象STEP: STEP4後半〜STEP5（Controller button mapping実測）
+- 期待結果: Debug Panelのbutton/axes詳細表示を使い、Quest Touch Plus Controllerの各buttonのindexを実機で特定できる
+- 実際の結果（実機確認済み・ユーザー報告によるbutton mapping実測値）:
+  - Left Trigger: button `#0`
+  - Left Grip: button `#1`
+  - Left Stick click: button `#3`
+  - Left X: button `#4`
+  - Left Y: button `#5`
+  - Left Menu: button `#12`
+  - Right Trigger: button `#0`
+  - Right Grip: button `#1`
+  - Right Stick click: button `#3`
+  - Right A: button `#4`
+  - Right B: button `#5`
+
+### HUD表示方式: world-fixed / camera-forward / camera-add / xr-camera-add
+- 本検証では変更なし。前回記録（`camera-forward`推奨、`xr-camera-add`除外）を維持。
+
+### inputSources結果: 
+- 前回記録から変更なし（`inputSources: 2`、`profiles: meta-quest-touch-plus`）。
+
+### buttons / axes結果: 
+- 上記の実測 button mapping参照。axesの実測値（スティック傾き等の具体的な数値）は今回の報告に含まれず、別途実機確認が必備。
+
+### 採用判断: 
+- 実測結果に基づき、以下のController操作を採用する（本PR `feat: add controller scene switching test` で実装）。
+  - Right A `#4`: 次のシーン（`nextScene`）
+  - Left X `#4`: 前のシーン（`prevScene`）
+  - Right B `#5`: HUD表示ON/OFF（`toggleHud`）
+  - Left Y `#5`: Debug詳細表示ON/OFF（`toggleDebugDetail`）
+  - Trigger `#0` / Grip `#1` は将来拡張用に未割り当てのまま保持
+  - Left Menu `#12` はDebug Panelの取得ログには残すが、主要操作には割り当てない（ユーザー指示通り）
+- 上記の割り当て自体はコードレベルで実装済みだが、**シーン切り替え・HUD/Debug切り替えの実機での動作確認（意図した通りに反応するか）はまだ実施していない**。次回実機検証で確認予定。
+
+### ArchView360へ戻すかどうか: 
+- Quest Touch Plus のbutton mapping（Trigger#0, Grip#1, Stick click#3, X/A#4, Y/B#5, Menu#12）はArchView360側のController実装の参考情報として持ち帰り候補とする。
+- ダミーシーン切り替えロジック自体の採用可否は、実機での動作確認後に判断する。
